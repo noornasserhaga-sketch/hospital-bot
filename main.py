@@ -58,6 +58,7 @@ def is_valid_egyptian_phone(phone: str) -> bool:
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data.clear()
+    context.user_data["started"] = True
 
     keyboard = [
         [InlineKeyboardButton("عيادة القناطر الخيرية", callback_data="qanater")],
@@ -73,6 +74,14 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(text, reply_markup=InlineKeyboardMarkup(keyboard))
     return CHOOSING_CLINIC
+
+
+async def start_from_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # يبدأ الحجز من أي رسالة عادية لو المستخدم مش داخل حوار بالفعل
+    if context.user_data.get("started"):
+        return
+
+    return await start(update, context)
 
 
 async def choose_clinic(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -208,6 +217,13 @@ async def get_age(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception:
         await update.message.reply_text("تم الحجز، لكن تعذر إرسال البيانات إلى الجروب.")
 
+    context.user_data.clear()
+    return ConversationHandler.END
+
+
+async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    context.user_data.clear()
+    await update.message.reply_text("تم إلغاء العملية. ابعت أي رسالة للبدء من جديد.")
     return ConversationHandler.END
 
 
@@ -215,7 +231,10 @@ def main():
     app = ApplicationBuilder().token(TOKEN).build()
 
     conv = ConversationHandler(
-        entry_points=[CommandHandler("start", start),MessageHandler(filters.TEXT & ~filters.COMMAND, start)],
+        entry_points=[
+            CommandHandler("start", start),
+            MessageHandler(filters.TEXT & ~filters.COMMAND, start_from_text),
+        ],
         states={
             CHOOSING_CLINIC: [CallbackQueryHandler(choose_clinic)],
             CHOOSING_DAY: [CallbackQueryHandler(choose_day)],
@@ -224,7 +243,7 @@ def main():
             GET_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_name)],
             GET_AGE: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_age)],
         },
-        fallbacks=[],
+        fallbacks=[CommandHandler("cancel", cancel), CommandHandler("start", start)],
     )
 
     app.add_handler(conv)
