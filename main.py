@@ -215,7 +215,7 @@ def main():
     app = ApplicationBuilder().token(TOKEN).build()
 
     conv = ConversationHandler(
-        entry_points=[CommandHandler("start", start)],
+        entry_points=[CommandHandler("start", start),MessageHandler(filters.TEXT & ~filters.COMMAND, start)],
         states={
             CHOOSING_CLINIC: [CallbackQueryHandler(choose_clinic)],
             CHOOSING_DAY: [CallbackQueryHandler(choose_day)],
