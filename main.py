@@ -56,7 +56,8 @@ clinics = {
 
 # 🟢 بدء البوت
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    context.user_data.clear()
+    chat_id = update.effective_chat.id
+    await update.message.reply_text(f"Chat ID: {chat_id}")
 
     keyboard = [
         [InlineKeyboardButton("عيادة القناطر الخيرية", callback_data="qanater")],
