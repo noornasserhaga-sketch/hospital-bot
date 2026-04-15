@@ -10,8 +10,11 @@ from telegram.ext import (
     filters,
 )
 
-TOKEN = os.getenv("BOT_TOKEN")
-ADMIN_CHAT_ID = ""
+# 🔴 حط التوكن هنا مؤقتًا (وغيره بعدين)
+TOKEN = "PUT_YOUR_TOKEN_HERE"
+
+# 🔴 حط Chat ID هنا بعد ما تجيبه
+ADMIN_CHAT_ID = None
 
 CHOOSING_CLINIC, CHOOSING_DAY, CHOOSING_TIME, GET_PHONE, GET_NAME = range(5)
 
@@ -51,6 +54,7 @@ clinics = {
 }
 
 
+# 🟢 بدء البوت
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data.clear()
 
@@ -70,6 +74,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return CHOOSING_CLINIC
 
 
+# اختيار العيادة
 async def choose_clinic(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -78,7 +83,6 @@ async def choose_clinic(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["clinic_key"] = clinic_key
 
     days = clinics[clinic_key]["days"].keys()
-
     keyboard = [[InlineKeyboardButton(day, callback_data=day)] for day in days]
 
     await query.edit_message_text(
@@ -87,6 +91,7 @@ async def choose_clinic(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return CHOOSING_DAY
 
 
+# اختيار اليوم
 async def choose_day(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -105,6 +110,7 @@ async def choose_day(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return CHOOSING_TIME
 
 
+# اختيار الوقت
 async def choose_time(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -115,13 +121,14 @@ async def choose_time(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return GET_PHONE
 
 
+# رقم الهاتف
 async def get_phone(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["phone"] = update.message.text
-
     await update.message.reply_text("من فضلك اكتب اسم المريض:")
     return GET_NAME
 
 
+# اسم المريض + إرسال البيانات
 async def get_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
     name = update.message.text
     context.user_data["name"] = name
@@ -153,9 +160,22 @@ async def get_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(text)
 
+    # 🔥 إرسال للجروب
+    if ADMIN_CHAT_ID:
+        await context.bot.send_message(
+            chat_id=ADMIN_CHAT_ID,
+            text=text
+        )
+
     return ConversationHandler.END
 
 
+# 🟢 جلب Chat ID
+async def get_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(str(update.effective_chat.id))
+
+
+# 🟢 تشغيل البوت
 def main():
     app = ApplicationBuilder().token(TOKEN).build()
 
@@ -172,6 +192,11 @@ def main():
     )
 
     app.add_handler(conv)
+
+    # 👇 أمر /id
+    app.add_handler(CommandHandler("id", get_id))
+
+    print("Bot is running...")
     app.run_polling()
 
 
